@@ -1,6 +1,6 @@
 use super::Normalize;
 use rand::prelude::*;
-use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Vec3 {
@@ -31,6 +31,15 @@ impl Vec3 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
 
+    /// vector with components randomized between [0, 1]
+    pub fn random() -> Vec3 {
+        Vec3 {
+            x: random(),
+            y: random(),
+            z: random(),
+        }
+    }
+
     /// random point in a unit sphere
     pub fn random_unit_sphere() -> Vec3 {
         Vec3::random_unit() * random::<f64>()
@@ -58,9 +67,25 @@ impl Vec3 {
         }
     }
 
+    /// random point in a disk in the xy plane
+    pub fn random_in_xy_unit_disk() -> Vec3 {
+        let mut v = Vec3::random_unit();
+        v.z = 0.;
+        v
+    }
+
     /// reflect against a surface with the given normal
     pub fn reflect(&self, normal: Vec3) -> Vec3 {
         *self - 2. * self.dot(normal) * normal
+    }
+
+    /// refract on a surface
+    pub fn refract(&self, normal: Vec3, etai_over_etat: f64) -> Vec3 {
+        let uv = *self;
+        let cos_theta = (-uv).dot(normal).min(1.0);
+        let perp = etai_over_etat * (uv + cos_theta * normal);
+        let parallel = -1. * (1.0 - perp.length_squared()).abs().sqrt() * normal;
+        perp + parallel
     }
 
     /// sqrt x, y, and z
@@ -223,5 +248,13 @@ impl AddAssign for Vec3 {
         self.x += rhs.x;
         self.y += rhs.y;
         self.z += rhs.z;
+    }
+}
+
+impl MulAssign<f64> for Vec3 {
+    fn mul_assign(&mut self, rhs: f64) {
+        self.x *= rhs;
+        self.y *= rhs;
+        self.z *= rhs;
     }
 }

@@ -10,29 +10,44 @@ struct Screen {
 
 pub struct FixedCamera {
     pub eye: Vec3,
+    lens_radius: f64,
+    uvw: (Vec3, Vec3, Vec3),
     screen: Screen,
 }
 
 impl FixedCamera {
-    pub fn new(eye: Vec3, look_at: Vec3, up: Vec3, aspect_ratio: f64, fov: f64) -> Self {
-        let h = (fov.to_radians() / 2.).tan();
+    pub fn new(
+        eye: Vec3,
+        look_at: Vec3,
+        up: Vec3,
+        aspect_ratio: f64,
+        vfov: f64,
+        aperture: f64,
+        focus_dist: f64,
+    ) -> Self {
+        let h = (vfov.to_radians() / 2.).tan();
         let viewport_height: f64 = 2.0 * h;
         let viewport_width: f64 = viewport_height * aspect_ratio;
 
-        let w = eye - look_at;
-        let dx = up.cross(w).normalize();
-        let dy = w.cross(dx).normalize();
+        let w = (eye - look_at).normalize();
+        let u = up.cross(w).normalize();
+        let v = w.cross(u);
 
-        let horizontal = viewport_width * dx;
-        let vertical = viewport_height * dy;
-        let origin = eye - horizontal / 2. - vertical / 2. - w;
+        let horizontal = focus_dist * viewport_width * u;
+        let vertical = focus_dist * viewport_height * v;
+        let origin = eye - horizontal / 2. - vertical / 2. - focus_dist * w;
 
         let screen = Screen {
             horizontal,
             vertical,
             origin,
         };
-        FixedCamera { eye, screen }
+        FixedCamera {
+            eye,
+            lens_radius: aperture / 2.,
+            uvw: (u, v, w),
+            screen,
+        }
     }
 }
 
@@ -42,12 +57,17 @@ pub trait Camera {
 
 impl Camera for FixedCamera {
     fn get_screen_ray(&self, dx: f64, dy: f64) -> Ray {
+        let rd = self.lens_radius * Vec3::random_in_xy_unit_disk();
+        let (u, v, _) = self.uvw;
+        let offset = u * rd.x + v * rd.y;
+
         Ray {
-            origin: self.eye,
+            origin: self.eye + offset,
             direction: self.screen.origin
                 + (dx * self.screen.horizontal)
                 + (dy * self.screen.vertical)
-                - self.eye,
+                - self.eye
+                - offset,
         }
     }
 }

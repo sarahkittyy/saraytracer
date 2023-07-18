@@ -7,6 +7,7 @@ pub struct RayContact {
     pub t: f64,
     pub point: Vec3,
     pub normal: Vec3,
+    pub front_face: bool,
     pub material: Arc<dyn Material>,
 }
 
@@ -69,10 +70,13 @@ impl Shape for Sphere {
             }
 
             let point = ray.at(root);
+            let normal = (point - self.center).normalize();
+            let front_face = ray.direction.dot(normal) < 0.;
             RayContact {
                 t: root,
                 point,
-                normal: (point - self.center).normalize(),
+                normal: if front_face { normal } else { -normal },
+                front_face,
                 material: self.material.clone(),
             }
             .into()
