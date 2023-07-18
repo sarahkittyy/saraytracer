@@ -9,4 +9,4 @@ Features:
 
 Thanks [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html) :)
 
-![Output](output.png)
+![Output](output_hd.png)

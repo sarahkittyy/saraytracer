@@ -33,10 +33,11 @@ impl Vec3 {
 
     /// vector with components randomized between [0, 1]
     pub fn random() -> Vec3 {
+        let mut rng = thread_rng();
         Vec3 {
-            x: random(),
-            y: random(),
-            z: random(),
+            x: rng.gen(),
+            y: rng.gen(),
+            z: rng.gen(),
         }
     }
 
@@ -47,7 +48,8 @@ impl Vec3 {
 
     /// random unit vector
     pub fn random_unit() -> Vec3 {
-        let r = || 2f64 * random::<f64>() - 1.;
+        let mut rng = thread_rng();
+        let mut r = || 2f64 * rng.gen::<f64>() - 1.;
         Vec3 {
             x: r(),
             y: r(),

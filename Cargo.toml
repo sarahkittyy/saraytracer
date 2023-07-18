@@ -9,3 +9,6 @@ edition = "2021"
 image = "0.24.6"
 rand = "0.8.5"
 rayon = "1.7.0"
+
+[profile.release]
+debug = 1

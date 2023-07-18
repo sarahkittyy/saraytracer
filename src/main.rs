@@ -30,7 +30,7 @@ fn ray_color(ray: Ray, world: &World, max_depth: u32) -> Color {
 }
 
 fn create_scene(world: &mut World) {
-    let ground: Diffuse = Color::new(0.8, 0.8, 0.0).into();
+    let ground: Diffuse = Color::new(0.8, 0.5, 0.9).into();
 
     world.insert(Sphere::new(Vec3::new(0., -1000., -1.), 1000., ground));
 
@@ -96,9 +96,10 @@ fn create_scene(world: &mut World) {
 
 fn main() {
     const ASPECT_RATIO: f64 = 16.0 / 9.0; // width / height
-    const IMAGE_WIDTH: u32 = 1000;
+    const IMAGE_WIDTH: u32 = 400;
     const IMAGE_HEIGHT: u32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as u32;
-    const SAMPLES_PER_PIXEL: u32 = 100;
+    const IMAGE_PIXELS: u32 = IMAGE_WIDTH * IMAGE_HEIGHT;
+    const SAMPLES_PER_PIXEL: u32 = 50;
 
     // camera
     let eye = Vec3::new(13., 2., 3.);
@@ -120,17 +121,18 @@ fn main() {
     create_scene(&mut world.write().unwrap());
 
     let now = Instant::now();
-    let colors: Vec<(u32, u32, Vec3)> = (0..(IMAGE_HEIGHT * IMAGE_WIDTH))
+    let px: Vec<(u32, u32, Color)> = (0..IMAGE_PIXELS)
         .into_par_iter()
         .map_with(world, |world, i| {
+            let mut rng = thread_rng();
             let x = i % IMAGE_WIDTH;
             let y = i / IMAGE_WIDTH;
             let mut pixel_color = Color::WHITE;
             for _ in 0..SAMPLES_PER_PIXEL {
                 let (px, py) = (x as f64, y as f64);
                 // 			vv random sampling
-                let rx: f64 = random();
-                let ry: f64 = random();
+                let rx: f64 = rng.gen();
+                let ry: f64 = rng.gen();
                 let dx = (px + rx) / ((IMAGE_WIDTH - 1) as f64);
                 let dy = (py + ry) / ((IMAGE_HEIGHT - 1) as f64);
                 let r = camera.get_screen_ray(dx, dy);
@@ -143,9 +145,10 @@ fn main() {
     let elapsed = now.elapsed();
     println!("Raytracer computed in {:.2}s", elapsed.as_secs_f64());
 
-    colors.iter().for_each(|&(x, y, color)| {
-        let rgb = &mut imgbuf.get_pixel_mut(x, IMAGE_HEIGHT - y - 1).0;
-        *rgb = color.into_rgb8_array();
-    });
+    for (x, y, color) in px.into_iter() {
+        let px = &mut imgbuf.get_pixel_mut(x, IMAGE_HEIGHT - y - 1).0;
+        *px = color.into_rgb8_array();
+    }
+
     imgbuf.save("output.png").unwrap();
 }
